@@ -1,20 +1,25 @@
 use std::{env, fs};
 use std::collections::{HashMap, HashSet};
+use std::error::Error;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Write};
 use std::path::PathBuf;
-use std::process::exit;
+use std::process::{Command, exit, Stdio};
 
 use clap::ValueEnum;
 use futures_util::{StreamExt, TryStreamExt};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use regex::Regex;
 use reqwest::Client;
 use serde::Deserialize;
 use tempdir::TempDir;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncWriteExt};
+use tokio::process::Child;
+use crate::send_info;
+use tokio::process::Command as TokioCommand;
+use tokio::signal::unix::{signal, SignalKind};
 
 #[derive(Debug, Deserialize)]
 struct Vanilla_VersionManifest {
@@ -113,6 +118,8 @@ pub struct Server {
 
 impl Server {
     pub async fn init_server(&mut self) {
+        // Create Working Directory
+        send_info("Creating Working Directory.");
         if self.wd == PathBuf::from("none") {
             let dir_name = format!("{:?}:{}-{}", self.software, self.version, generate_random_uuid());
             self.wd = get_temp_folder().unwrap();
@@ -129,12 +136,67 @@ impl Server {
             }
         }
 
-        println!("Updated working directory: {:?}", self.wd);
-        println!("{:?}:{}", self.software, self.version);
-        println!("Plugins: {:?}", self.plugins);
+        // Download Server Software
+        send_info("Downloading Server Software.");
+        download_server_software(self.software, self.version.clone(), self.wd.clone()).await;
 
-        download_server_software(self.software, self.version.clone(), self.wd.clone()).await
+        // Create Eula txt
+        send_info("Creating Eula.txt.");
+        let mut path = self.wd.clone();  // Use the provided directory
+        path.push("eula.txt");
+
+        // Create and open the file at the specified path
+        match File::create(&path) {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(b"eula=true") {
+                    eprintln!("Error writing to eula.txt: {}", e);
+                    exit(1);
+                }
+            }
+            Err(e) => {
+                eprintln!("Error creating eula.txt: {}", e);
+                exit(1);
+            }
+        }
     }
+
+    pub async fn start_server(&self) -> Result<(), Box<dyn Error>> {
+        let mut command = TokioCommand::new("java");
+        command.args(&["-Xms256M", &format!("-Xmx{}M", self.mem), "-jar", "server.jar"]); // Assuming the server jar is named "server.jar"
+
+        // Adding extra server arguments if provided
+        for arg in &self.args {
+            command.arg(arg);
+        }
+
+        // Set working directory
+        command.current_dir(&self.wd);
+
+        // Redirect stdout, stdin, and stderr to inherit from the parent process
+        command.stdout(std::process::Stdio::inherit())
+            .stdin(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+
+        // Spawn the child process
+        let mut child = command.spawn()?;
+
+        // Set up a signal handler for SIGINT (Ctrl+C)
+        let mut signal = signal(SignalKind::interrupt())?;
+
+        // Wait for either the child process to exit or the Ctrl+C signal
+        tokio::select! {
+            _ = child.wait() => {
+                // Child process exited, no action needed
+            }
+            _ = signal.recv() => {
+                // Ctrl+C signal received, terminate the child process
+                child.kill().await;
+            }
+        }
+
+        Ok(())
+    }
+
 }
 
 pub async fn download_server_software(software: Software, version: String, wd: PathBuf) {
@@ -192,7 +254,7 @@ async fn download_file(url: &str, save_dir: &PathBuf, file_name: &str) -> Result
     let content_length = response.content_length().unwrap_or(0);
     let pb = ProgressBar::new(content_length);
     pb.set_style(ProgressStyle::default_bar()
-        .template("{bar:40.cyan/blue} {bytes}/{total_bytes} ({eta})")?
+        .template("{bar:40.green/green} {bytes}/{total_bytes} ({eta})")?
         .progress_chars("#>-"));
 
     if !save_dir.exists() {

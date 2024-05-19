@@ -1,12 +1,13 @@
-mod ServerManagment;
-
-use std::{fs, io};
-use std::path::{Path, PathBuf};
+use std::fs;
+use std::path::PathBuf;
 use std::process::exit;
-use clap::{CommandFactory, Parser, Subcommand, ValueEnum, ValueHint};
+
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use libtermcolor::colors;
-use regex::Regex;
+
 use crate::ServerManagment::{Server, Software};
+
+mod ServerManagment;
 
 #[derive(Parser, Debug)]
 #[command(about, long_about, name = "mcsdk")]
@@ -40,6 +41,10 @@ enum Commands {
 
     #[command()]
     List {}
+}
+
+pub fn send_info(msg: &str) {
+    println!("{}[{}MC-SDK{}]{} {}{}", colors::bright_black().regular, colors::bright_green().regular, colors::bright_black().regular, colors::bright_green().regular, msg, colors::reset())
 }
 
 #[tokio::main]
@@ -76,6 +81,10 @@ async fn main() {
             };
 
             server.init_server().await;
+            if let Err(err) = server.start_server().await {
+                eprintln!("Error starting server: {}", err);
+                exit(1);
+            }
         }
         Some(Commands::List {}) => {}
         _ => {}
