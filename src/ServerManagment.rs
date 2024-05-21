@@ -1,9 +1,10 @@
 use std::{env, fs};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use std::fmt::{Debug, format};
 use std::fs::File;
-use std::io::{Write};
-use std::path::PathBuf;
+use std::io::{ErrorKind, Write};
+use std::path::{Path, PathBuf};
 use std::process::{Command, exit, Stdio};
 
 use clap::ValueEnum;
@@ -119,7 +120,7 @@ pub struct Server {
 impl Server {
     pub async fn init_server(&mut self) {
         // Create Working Directory
-        send_info("Creating Working Directory.");
+        send_info("Creating Working Directory.".to_string());
         if self.wd == PathBuf::from("none") {
             let dir_name = format!("{:?}:{}-{}", self.software, self.version, generate_random_uuid());
             self.wd = get_temp_folder().unwrap();
@@ -137,11 +138,11 @@ impl Server {
         }
 
         // Download Server Software
-        send_info("Downloading Server Software.");
+        send_info("Downloading Server Software.".to_string());
         download_server_software(self.software, self.version.clone(), self.wd.clone()).await;
 
         // Create Eula txt
-        send_info("Creating Eula.txt.");
+        send_info("Creating Eula.txt.".to_string());
         let mut path = self.wd.clone();  // Use the provided directory
         path.push("eula.txt");
 
@@ -158,6 +159,11 @@ impl Server {
                 exit(1);
             }
         }
+        
+        let mut plugins_folder = self.wd.clone();
+        plugins_folder.push("plugins");
+        createdir(plugins_folder.clone());
+        copy_plugins(self.plugins.clone(), plugins_folder);
     }
 
     pub async fn start_server(&self) -> Result<(), Box<dyn Error>> {
@@ -247,8 +253,44 @@ pub async fn Paper_get_Download_link(version: Option<&str>) -> Result<String, St
     }
 }
 
+fn copy_file_to_folder(file_path: PathBuf, folder_path: PathBuf) -> std::io::Result<()> {
+    // Ensure the folder path exists
+    if !folder_path.is_dir() {
+        return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Destination folder does not exist"));
+    }
 
-async fn download_file(url: &str, save_dir: &PathBuf, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    // Get the file name from the file path
+    let file_name = match file_path.file_name() {
+        Some(name) => name,
+        None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid file path")),
+    };
+
+    // Construct the destination path
+    let mut destination_path = folder_path.clone();
+    destination_path.push(file_name);
+
+    // Copy the file to the destination path
+    fs::copy(&file_path, &destination_path)?;
+
+    Ok(())
+}
+
+fn copy_plugins(plugins: Vec<PathBuf>, plugins_folder: PathBuf) {
+    for plugin in plugins {
+        if !plugin.exists() {
+            eprintln!("{:?} does not exist. Skipping...", plugin.file_name());
+            return;
+        }
+        if plugin.is_file() && plugin.is_absolute() && !plugin.is_symlink() {
+            match copy_file_to_folder(plugin.clone(), plugins_folder.clone()) {
+                Ok(()) => send_info(format!("{} moved to plugins Folder.", plugin.file_name().unwrap().to_str().unwrap())),
+                Err(e) => eprintln!("Failed to copy file: {}", e),
+            }
+        }
+    }
+}
+
+async fn download_file(url: &str, save_dir: &PathBuf, file_name: &str) -> Result<(), Box<dyn Error>> {
     let client = Client::new();
     let response = client.get(url).send().await?;
     let content_length = response.content_length().unwrap_or(0);

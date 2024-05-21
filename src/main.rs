@@ -1,3 +1,5 @@
+use std::ffi::OsStr;
+use std::fmt::format;
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
@@ -43,7 +45,7 @@ enum Commands {
     List {}
 }
 
-pub fn send_info(msg: &str) {
+pub fn send_info(msg: String) {
     println!("{}[{}MC-SDK{}]{} {}{}", colors::bright_black().regular, colors::bright_green().regular, colors::bright_black().regular, colors::bright_green().regular, msg, colors::reset())
 }
 
