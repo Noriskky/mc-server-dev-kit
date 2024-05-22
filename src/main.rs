@@ -1,17 +1,18 @@
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
-use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
+use clap::{CommandFactory, Parser, Subcommand};
 use libtermcolor::colors;
-use crate::Server::Software;
-use crate::ServerManager::check_valid_version;
+use crate::server::Software;
+use crate::server_manager::check_valid_version;
 
-mod Server;
-mod ServerManager;
+mod server;
+mod server_manager;
 
 /// A Local Minecraft Server Plugin Testing Solution
 #[derive(Parser, Debug)]
 #[command(about, long_about, name = "mcsdk")]
+#[command(author = "Noriskky")]
 struct Args {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -31,7 +32,7 @@ enum Commands {
         version: String,
         
         /// Path to Plugin jars to put into the plugins Folder
-        #[arg(require_equals = true)]
+        #[arg()]
         plugins: Vec<PathBuf>,
 
         /// Where the server should be stored (default="/var/tmp/mcsdk/<server>)
@@ -75,13 +76,13 @@ async fn main() {
                 }
             }
 
-            let mut server = Server::Server {
+            let mut server = server::Server {
                 wd: working_directory,
-                software: software,
-                version: version,
-                plugins: plugins,
-                args: args,
-                mem: mem,
+                software,
+                version,
+                plugins,
+                args,
+                mem,
             };
 
             server.init_server().await;
@@ -89,9 +90,17 @@ async fn main() {
                 eprintln!("Error starting server: {}", err);
                 exit(1);
             }
+            
+            println!("\n");
+            send_info("Server Stopped.".to_string())
         }
         _ => {}
     }
 
-    exit(1)
+    // If no arguments are provided, show the help message
+    if std::env::args().len() == 1 {
+        Args::command().print_help().unwrap();
+        exit(0);
+    }
+    exit(0)
 }

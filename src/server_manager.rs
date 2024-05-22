@@ -5,8 +5,8 @@ use std::fmt::Debug;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::{exit, Stdio};
-use clap::ValueEnum;
+use std::process::exit;
+
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::distributions::Alphanumeric;
@@ -15,32 +15,31 @@ use regex::Regex;
 use reqwest::Client;
 use serde::Deserialize;
 use tempdir::TempDir;
-use tokio::process::Command as TokioCommand;
-use tokio::signal::unix::{signal, SignalKind};
+
 use crate::send_info;
-use crate::Server::Software;
+use crate::server::Software;
 
 #[derive(Debug, Deserialize)]
-pub struct Vanilla_VersionManifest {
-    latest: Vanilla_LatestVersions,
-    pub(crate) versions: Vec<Vanilla_VersionEntry>,
+pub struct VanillaVersionManifest {
+    latest: VanillaLatestVersions,
+    pub(crate) versions: Vec<VanillaVersionEntry>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Vanilla_LatestVersions {
+pub struct VanillaLatestVersions {
     release: String,
     snapshot: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Vanilla_VersionEntry {
+pub struct VanillaVersionEntry {
     pub(crate) id: String,
     #[serde(rename = "type")]
     version_type: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Paper_ApiResponse {
+pub struct PaperApiResponse {
     latest: String,
     versions: HashMap<String, String>,
 }
@@ -98,7 +97,7 @@ pub async fn download_server_software(software: Software, version: String, wd: P
     let mut downloadurl = String::new();
 
     if software == Software::Paper {
-        match Paper_get_Download_link(Some(&version)).await {
+        match paper_get_download_link(Some(&version)).await {
             Ok(download_link) => {
                 downloadurl = download_link;
             },
@@ -115,20 +114,20 @@ pub async fn download_server_software(software: Software, version: String, wd: P
     }
 }
 
-pub async fn Paper_get_Download_link(version: Option<&str>) -> Result<String, String> {
+pub async fn paper_get_download_link(version: Option<&str>) -> Result<String, String> {
     let url = "https://qing762.is-a.dev/api/papermc";
     let response = match reqwest::get(url).await {
         Ok(resp) => resp,
-        Err(e) => { return Err(format!("Failed to fetch API response: {}", e)); exit(1) },
+        Err(e) => return Err(format!("Failed to fetch API response: {}", e)),
     };
 
     if !response.status().is_success() {
         return Err(format!("Failed to fetch API response: Status code {}", response.status()));
     }
 
-    let json_response: Paper_ApiResponse = match response.json().await {
+    let json_response: PaperApiResponse = match response.json().await {
         Ok(resp) => resp,
-        Err(e) => { return Err(format!("Failed to parse JSON response: {}", e)); exit(1) },
+        Err(e) => return Err(format!("Failed to parse JSON response: {}", e)),
     };
 
     let version = match version {
@@ -163,7 +162,7 @@ pub fn copy_file_to_folder(file_path: PathBuf, folder_path: PathBuf) -> std::io:
 pub fn copy_plugins(plugins: Vec<PathBuf>, plugins_folder: PathBuf) {
     for plugin in plugins {
         if !plugin.exists() {
-            eprintln!("{:?} does not exist. Skipping...", plugin.file_name());
+            eprintln!("{:?} does not exist. Skipping...", plugin.file_name().unwrap());
             return;
         }
         if plugin.is_file() && plugin.is_absolute() && !plugin.is_symlink() {
@@ -202,7 +201,7 @@ async fn download_file(url: &str, save_dir: &PathBuf, file_name: &str) -> Result
     }
     pb.finish_with_message("Download complete");
 
-    Ok(())
+    return Ok(())
 }
 
 pub async fn check_valid_version(version_to_check: &str) -> bool {
@@ -228,7 +227,7 @@ pub async fn check_valid_version(version_to_check: &str) -> bool {
         return false;
     }
 
-    let json_response: Vanilla_VersionManifest = match response.json().await {
+    let json_response: VanillaVersionManifest = match response.json().await {
         Ok(resp) => resp,
         Err(e) => {
             eprintln!("Error: Failed to parse JSON response - {}", e);
@@ -242,6 +241,6 @@ pub async fn check_valid_version(version_to_check: &str) -> bool {
         eprintln!("Error: Version {} not found in version manifest.", version_to_check);
         return false;
     }
-
-    true
+    
+    return true
 }

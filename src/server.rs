@@ -1,15 +1,13 @@
-use std::collections::HashSet;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{exit, Stdio};
 use clap::ValueEnum;
-use regex::Regex;
 use tokio::process::Command;
 use tokio::signal::unix::{signal, SignalKind};
 use crate::send_info;
-use crate::ServerManager::{copy_plugins, createdir, download_server_software, generate_random_uuid, get_temp_folder, Vanilla_VersionManifest};
+use crate::server_manager::{copy_plugins, createdir, download_server_software, generate_random_uuid, get_temp_folder};
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Software {
@@ -93,7 +91,7 @@ impl Server {
             _ = child.wait() => {
             }
             _ = signal.recv() => {
-                child.kill().await;
+                let _ = child.kill().await;
             }
         }
 
