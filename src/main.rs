@@ -1,16 +1,15 @@
-use std::ffi::OsStr;
-use std::fmt::format;
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
-
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use libtermcolor::colors;
+use crate::Server::Software;
+use crate::ServerManager::check_valid_version;
 
-use crate::ServerManagment::{Server, Software};
+mod Server;
+mod ServerManager;
 
-mod ServerManagment;
-
+/// A Local Minecraft Server Plugin Testing Solution
 #[derive(Parser, Debug)]
 #[command(about, long_about, name = "mcsdk")]
 struct Args {
@@ -18,31 +17,40 @@ struct Args {
     command: Option<Commands>,
 }
 
-#[derive(Subcommand, Debug, PartialEq)]
+#[derive(Subcommand, Debug)]
 enum Commands {
+    
+    /// Start a Local Test Server
     #[command(arg_required_else_help = true)]
     Start {
+        /// Define what Server Software should be used
         #[arg(required = true, value_enum)]
         software: Software,
 
+        /// Which Minecraft Version should be started
         #[arg(required = true)]
         version: String,
-
+        
+        /// Path to Plugin jars to put into the plugins Folder
         #[arg(require_equals = true)]
         plugins: Vec<PathBuf>,
 
+        /// Where the server should be stored (default="/var/tmp/mcsdk/<server>)
         #[arg(short, long, default_value = "none")]
         working_directory: PathBuf,
-
+        
+        /// Arguments to give the server
         #[arg(short, long)]
         args: Vec<String>,
-
+        
+        /// How much Ram is the server allowed to use
         #[arg(short, long, default_value = "2048")]
         mem: u32
     },
-
-    #[command()]
-    List {}
+    
+    // Servers currently running
+    //#[command()]
+    //List {}
 }
 
 pub fn send_info(msg: String) {
@@ -52,10 +60,9 @@ pub fn send_info(msg: String) {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-
     match args.command {
         Some(Commands::Start { software, version, plugins, working_directory, args, mem }) => {
-            if !ServerManagment::check_valid_version(&*version).await {
+            if !check_valid_version(&*version).await {
                 exit(1)
             }
 
@@ -73,7 +80,7 @@ async fn main() {
                 }
             }
 
-            let mut server = Server {
+            let mut server = Server::Server {
                 wd: working_directory,
                 software: software,
                 version: version,
@@ -88,7 +95,7 @@ async fn main() {
                 exit(1);
             }
         }
-        Some(Commands::List {}) => {}
+        //Some(Commands::List {}) => {}
         _ => {}
     }
 
