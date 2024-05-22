@@ -19,7 +19,6 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    
     /// Start a Local Test Server
     #[command(arg_required_else_help = true)]
     Start {
@@ -46,11 +45,7 @@ enum Commands {
         /// How much Ram is the server allowed to use
         #[arg(short, long, default_value = "2048")]
         mem: u32
-    },
-    
-    // Servers currently running
-    //#[command()]
-    //List {}
+    }
 }
 
 pub fn send_info(msg: String) {
@@ -95,7 +90,6 @@ async fn main() {
                 exit(1);
             }
         }
-        //Some(Commands::List {}) => {}
         _ => {}
     }
 
