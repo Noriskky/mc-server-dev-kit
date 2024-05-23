@@ -1,7 +1,14 @@
 [package]
-name = "mc-server-dev-kit"
+name = "mcsdk"
 version = "0.1.0"
 edition = "2021"
+description = "A Local Minecraft Server Plugin Testing Solution"
+readme = "Readme.md"
+homepage = "https://github.com/Noriskky/mc-server-dev-kit"
+repository = "https://github.com/Noriskky/mc-server-dev-kit"
+license = "GPL-3"
+license-file = "LICENSE"
+keywords = ["server-plugins", "cli", "mc", "minecraft", "minecraft-server"]
 
 [dependencies]
 libtermcolor = "1.1.0"
