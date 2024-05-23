@@ -12,7 +12,7 @@ use crate::server_manager::{copy_plugins, createdir, download_server_software, g
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Software {
     Paper,
-    Spigot
+    //Spigot
 }
 
 pub struct Server {
@@ -34,13 +34,11 @@ impl Server {
             createdir(self.wd.clone());
             self.wd.push(dir_name);
             createdir(self.wd.clone());
+        } else if let Ok(full_path) = self.wd.canonicalize() {
+            self.wd = full_path
         } else {
-            if let Ok(full_path) = self.wd.canonicalize() {
-                self.wd = full_path
-            } else {
-                eprintln!("Error: Failed to get the full path.");
-                exit(1)
-            }
+            eprintln!("Error: Failed to get the full path.");
+            exit(1)
         }
 
         send_info("Downloading Server Software.".to_string());
@@ -71,7 +69,7 @@ impl Server {
 
     pub async fn start_server(&self) -> Result<(), Box<dyn Error>> {
         let mut command = Command::new("java");
-        command.args(&["-Xms256M", &format!("-Xmx{}M", self.mem), "-jar", "server.jar"]);
+        command.args(["-Xms256M", &format!("-Xmx{}M", self.mem), "-jar", "server.jar"]);
 
         for arg in &self.args {
             command.arg(arg);
