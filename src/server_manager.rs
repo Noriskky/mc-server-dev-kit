@@ -20,23 +20,31 @@ use crate::send_info;
 use crate::server::Software;
 
 #[derive(Debug, Deserialize)]
-pub struct VanillaVersionManifest {
-    latest: VanillaLatestVersions,
-    pub(crate) versions: Vec<VanillaVersionEntry>,
+
+  /***************************************************/
+ /*                    Vanilla                      */
+/***************************************************/
+pub struct VanillaApiResponse {
+    latest: ApiVanillaLatestVersions,
+    pub(crate) versions: Vec<ApiVanillaVersionEntry>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct VanillaLatestVersions {
+pub struct ApiVanillaLatestVersions {
     release: String,
     snapshot: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct VanillaVersionEntry {
-    pub(crate) id: String,
+pub struct ApiVanillaVersionEntry {
+    id: String,
     #[serde(rename = "type")]
     version_type: String,
 }
+
+  /***************************************************/
+ /*                    Paper                        */
+/***************************************************/
 
 #[derive(Debug, Deserialize)]
 pub struct PaperApiResponse {
@@ -77,18 +85,15 @@ pub fn get_temp_folder() -> Result<PathBuf, std::io::Error> {
         None => return Err(std::io::Error::new(std::io::ErrorKind::Other, "Invalid temp directory path")),
     };
 
-    let temp_folder = TempDir::new_in(&temp_dir, "mcsdk-tmp")?;
+    let temp_folder = TempDir::new_in(temp_dir, "mcsdk-tmp")?;
     Ok(temp_folder.into_path())
 }
 
 pub fn createdir(dir: PathBuf) {
     if !dir.exists() {
-        match fs::create_dir(dir.clone()) {
-            Err(err) => {
-                eprintln!("Error creating directory: {}", err);
-                exit(1)
-            },
-            Ok(_) => {}
+        if let Err(err) = fs::create_dir(dir.clone()) {
+            eprintln!("Error creating directory: {}", err);
+            exit(1)
         }
     }
 }
@@ -106,10 +111,10 @@ pub async fn download_server_software(software: Software, version: String, wd: P
                 exit(1);
             },
         }
-    } else if software == Software::Spigot {
+        // } else if software == Software::Spigot {
     }
 
-    if let Err(err) = download_file(&*downloadurl, &wd, "server.jar").await {
+    if let Err(err) = download_file(&downloadurl, &wd, "server.jar").await {
         eprintln!("Error: {}", err);
     }
 }
@@ -201,7 +206,7 @@ async fn download_file(url: &str, save_dir: &PathBuf, file_name: &str) -> Result
     }
     pb.finish_with_message("Download complete");
 
-    return Ok(())
+    Ok(())
 }
 
 pub async fn check_valid_version(version_to_check: &str) -> bool {
@@ -227,7 +232,7 @@ pub async fn check_valid_version(version_to_check: &str) -> bool {
         return false;
     }
 
-    let json_response: VanillaVersionManifest = match response.json().await {
+    let json_response: VanillaApiResponse = match response.json().await {
         Ok(resp) => resp,
         Err(e) => {
             eprintln!("Error: Failed to parse JSON response - {}", e);
@@ -242,5 +247,6 @@ pub async fn check_valid_version(version_to_check: &str) -> bool {
         return false;
     }
     
-    return true
+    true
 }
+    

@@ -7,7 +7,6 @@ readme = "Readme.md"
 homepage = "https://github.com/Noriskky/mc-server-dev-kit"
 repository = "https://github.com/Noriskky/mc-server-dev-kit"
 license = "GPL-3"
-license-file = "LICENSE"
 keywords = ["server-plugins", "cli", "mc", "minecraft", "minecraft-server"]
 
 [dependencies]

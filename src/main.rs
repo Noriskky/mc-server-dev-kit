@@ -11,11 +11,11 @@ mod server_manager;
 
 /// A Local Minecraft Server Plugin Testing Solution
 #[derive(Parser, Debug)]
-#[command(about, long_about, name = "mcsdk")]
+#[command(about, long_about, name = "mcsdk", version)]
 #[command(author = "Noriskky")]
 struct Args {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Option<Commands>,   
 }
 
 #[derive(Subcommand, Debug)]
@@ -35,7 +35,7 @@ enum Commands {
         #[arg()]
         plugins: Vec<PathBuf>,
 
-        /// Where the server should be stored (default="/var/tmp/mcsdk/<server>)
+        /// Where the server should be stored
         #[arg(short, long, default_value = "none")]
         working_directory: PathBuf,
         
@@ -56,45 +56,39 @@ pub fn send_info(msg: String) {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    match args.command {
-        Some(Commands::Start { software, version, plugins, working_directory, args, mem }) => {
-            if !check_valid_version(&*version).await {
+    if let Some(Commands::Start { software, version, plugins, working_directory, args, mem }) = args.command {
+        if !check_valid_version(&version).await {
+            exit(1)
+        }
+
+        if working_directory != PathBuf::from("none") {
+            if !working_directory.exists() {
+                if let Err(err) = fs::create_dir(working_directory.clone()) { eprintln!("Error creating directory: {}", err) }
+            }
+
+            if !working_directory.is_dir() {
+                eprintln!("Error: You need to specify a Directory not a file");
                 exit(1)
             }
-
-            if working_directory != PathBuf::from("none") {
-                if !working_directory.exists() {
-                    match fs::create_dir(working_directory.clone()) {
-                        Err(err) => eprintln!("Error creating directory: {}", err),
-                        Ok(_) => {}
-                    }
-                }
-
-                if !working_directory.is_dir() {
-                    eprintln!("Error: You need to specify a Directory not a file");
-                    exit(1)
-                }
-            }
-
-            let mut server = server::Server {
-                wd: working_directory,
-                software,
-                version,
-                plugins,
-                args,
-                mem,
-            };
-
-            server.init_server().await;
-            if let Err(err) = server.start_server().await {
-                eprintln!("Error starting server: {}", err);
-                exit(1);
-            }
-            
-            println!("\n");
-            send_info("Server Stopped.".to_string())
         }
-        _ => {}
+
+        let mut server = server::Server {
+            wd: working_directory,
+            software,
+            version,
+            plugins,
+            args,
+            mem,
+        };
+
+        server.init_server().await;
+        if let Err(err) = server.start_server().await {
+            eprintln!("Error starting server: {}", err);
+            exit(1);
+        }
+        
+        println!("\n");
+        send_info("Server Stopped.".to_string())
     }
 
     // If no arguments are provided, show the help message
