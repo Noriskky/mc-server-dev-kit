@@ -45,7 +45,11 @@ enum Commands {
         
         /// How much Ram is the server allowed to use
         #[arg(short, long, default_value = "2048")]
-        mem: u32
+        mem: u32,
+        
+        /// If used the server Gui will start too
+        #[arg(short, long)]
+        gui: bool
     }
 }
 
@@ -56,11 +60,15 @@ pub fn send_info(msg: String) {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    if let Some(Commands::Start { software, version, plugins, working_directory, args, mem }) = args.command {
+    if let Some(Commands::Start { software, version, plugins, working_directory, mut args, mem, gui }) = args.command {
         if !check_valid_version(&version).await {
             exit(1)
         }
-
+    
+        if !gui { 
+            args.push("--nogui".to_string())
+        }
+        
         if working_directory != PathBuf::from("none") {
             if !working_directory.exists() {
                 if let Err(err) = fs::create_dir(working_directory.clone()) { eprintln!("Error creating directory: {}", err) }
