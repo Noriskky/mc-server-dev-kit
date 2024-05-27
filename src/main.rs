@@ -49,7 +49,11 @@ enum Commands {
         
         /// If used the server Gui will start too
         #[arg(short, long)]
-        gui: bool
+        gui: bool,
+        
+        /// Which Port to bind for the Server
+        #[arg(short, long, default_value = "25565")]
+        port: u16
     }
 }
 
@@ -60,13 +64,17 @@ pub fn send_info(msg: String) {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    if let Some(Commands::Start { software, version, plugins, working_directory, mut args, mem, gui }) = args.command {
+    if let Some(Commands::Start { software, version, plugins, working_directory, mut args, mem, gui, port }) = args.command {
         if !check_valid_version(&version).await {
             exit(1)
         }
     
         if !gui { 
             args.push("--nogui".to_string())
+        }
+        
+        if port != 25565 { 
+            args.push(format!("--port={}", port))
         }
         
         if working_directory != PathBuf::from("none") {
