@@ -49,6 +49,7 @@ mcsdk
 - `-m, --mem <MEM>`: How much Ram is the server allowed to use `[default: 2048]`  <br>
 - `-h, --help`: Print help  <br>
 - `-g, --gui`: If used the server Gui will start too <br>
+- `-p, --port`: Which Port to bind for the Server `[default: 25565]` <br>
 
 ## Support
 
