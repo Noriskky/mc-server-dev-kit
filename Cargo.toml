@@ -1,6 +1,6 @@
 [package]
 name = "mcsdk"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A Local Minecraft Server Plugin Testing Solution"
 readme = "Readme.md"
