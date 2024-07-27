@@ -165,16 +165,29 @@ pub fn copy_file_to_folder(file_path: PathBuf, folder_path: PathBuf) -> std::io:
 }
 
 pub fn copy_plugins(plugins: Vec<PathBuf>, plugins_folder: PathBuf) {
+    if !plugins_folder.exists() {
+        eprintln!("Destination folder does not exist: {:?}", plugins_folder);
+        return;
+    }
+
+    if !plugins_folder.is_dir() {
+        eprintln!("Destination path is not a directory: {:?}", plugins_folder);
+        return;
+    }
+
     for plugin in plugins {
         if !plugin.exists() {
-            eprintln!("{:?} does not exist. Skipping...", plugin.file_name().unwrap());
-            return;
+            eprintln!("{:?} does not exist. Skipping...", plugin);
+            continue;
         }
-        if plugin.is_file() && plugin.is_absolute() && !plugin.is_symlink() {
+
+        if plugin.is_file() {
             match copy_file_to_folder(plugin.clone(), plugins_folder.clone()) {
-                Ok(()) => send_info(format!("{} moved to plugins Folder.", plugin.file_name().unwrap().to_str().unwrap())),
-                Err(e) => eprintln!("Failed to copy {}: {}", plugin.file_name().unwrap().to_str().unwrap(), e),
+                Ok(()) => send_info(format!("{} moved to plugins Folder.", plugin.display())),
+                Err(e) => eprintln!("Failed to copy {}: {}", plugin.display(), e),
             }
+        } else {
+            eprintln!("{:?} is not a file. Skipping...", plugin);
         }
     }
 }
