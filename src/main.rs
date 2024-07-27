@@ -80,22 +80,7 @@ async fn main() {
         if !gui { 
             args.push("--nogui".to_string())
         }
-        
-        if debug {
-            send_debug(format!("Software: {:?}", software));
-            send_debug(format!("Version: {}", version));
-            send_debug(format!("Directory: {:?}", working_directory.as_path().to_str()));
-            send_debug("Args: ".parse().unwrap());
-            for arg in args.clone() {
-                println!(" > {}{}", colors::bright_yellow().regular, arg);
-            }
 
-            send_debug("Plugins: ".parse().unwrap());
-            for plugin in plugins.clone() {
-                println!(" > {}{}", colors::bright_yellow().regular, plugin.file_name().unwrap().to_str().unwrap());
-            }
-        }
-        
         if port != 25565 { 
             args.push(format!("--port={}", port))
         }
@@ -108,6 +93,20 @@ async fn main() {
             if !working_directory.is_dir() {
                 eprintln!("Error: You need to specify a Directory not a file");
                 exit(1)
+            }
+        }
+
+        if debug {
+            send_debug(format!("Software: {:?}", software));
+            send_debug(format!("Version: {}", version));
+            send_debug("Args: ".parse().unwrap  ());
+            for arg in args.clone() {
+                println!(" > {}{}", colors::bright_yellow().regular, arg);
+            }
+
+            send_debug("Plugins: ".parse().unwrap());
+            for plugin in plugins.clone() {
+                println!(" > {}{}", colors::bright_yellow().regular, plugin.file_name().unwrap().to_str().unwrap());
             }
         }
 
