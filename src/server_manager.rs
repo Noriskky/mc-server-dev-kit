@@ -173,7 +173,7 @@ pub fn copy_plugins(plugins: Vec<PathBuf>, plugins_folder: PathBuf) {
         if plugin.is_file() && plugin.is_absolute() && !plugin.is_symlink() {
             match copy_file_to_folder(plugin.clone(), plugins_folder.clone()) {
                 Ok(()) => send_info(format!("{} moved to plugins Folder.", plugin.file_name().unwrap().to_str().unwrap())),
-                Err(e) => eprintln!("Failed to copy file: {}", e),
+                Err(e) => eprintln!("Failed to copy {}: {}", plugin.file_name().unwrap().to_str().unwrap(), e),
             }
         }
     }
