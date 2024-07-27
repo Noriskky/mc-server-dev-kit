@@ -210,7 +210,7 @@ async fn download_file(url: &str, save_dir: &PathBuf, file_name: &str) -> Result
 }
 
 pub async fn check_valid_version(version_to_check: &str) -> bool {
-    let version_regex_pattern = r"^1\.\d{1,2}\.\d{1,2}$";
+    let version_regex_pattern = r"^1.\d{1,2}.?\d{1,2}$";
     let version_regex = Regex::new(version_regex_pattern).unwrap();
 
     if !version_regex.is_match(version_to_check) {
