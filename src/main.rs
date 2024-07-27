@@ -99,7 +99,7 @@ async fn main() {
         if debug {
             send_debug(format!("Software: {:?}", software));
             send_debug(format!("Version: {}", version));
-            send_debug("Args: ".parse().unwrap  ());
+            send_debug("Args: ".parse().unwrap());
             for arg in args.clone() {
                 println!(" > {}{}", colors::bright_yellow().regular, arg);
             }
