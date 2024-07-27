@@ -53,7 +53,11 @@ enum Commands {
         
         /// Which Port to bind for the Server
         #[arg(short, long, default_value = "25565")]
-        port: u16
+        port: u16,
+        
+        /// Printing some Debug Information
+        #[arg(short, long)]
+        debug: bool
     }
 }
 
@@ -61,16 +65,35 @@ pub fn send_info(msg: String) {
     println!("{}[{}MC-SDK{}]{} {}{}", colors::bright_black().regular, colors::bright_green().regular, colors::bright_black().regular, colors::bright_green().regular, msg, colors::reset())
 }
 
+pub fn send_debug(msg: String) {
+    println!("{}[{}Debug{}]{} {}{}", colors::bright_black().regular, colors::bright_yellow().regular, colors::bright_black().regular, colors::bright_yellow().regular, msg, colors::reset())
+}
+
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    if let Some(Commands::Start { software, version, plugins, working_directory, mut args, mem, gui, port }) = args.command {
+    if let Some(Commands::Start { software, version, plugins, working_directory, mut args, mem, gui, port, debug }) = args.command {
         if !check_valid_version(&version).await {
             exit(1)
         }
     
         if !gui { 
             args.push("--nogui".to_string())
+        }
+        
+        if debug {
+            send_debug(format!("Software: {:?}", software));
+            send_debug(format!("Version: {}", version));
+            send_debug(format!("Directory: {:?}", working_directory.as_path().to_str()));
+            send_debug("Args: ".parse().unwrap());
+            for arg in args.clone() {
+                println!(" > {}{}", colors::bright_yellow().regular, arg);
+            }
+
+            send_debug("Plugins: ".parse().unwrap());
+            for plugin in plugins.clone() {
+                println!(" > {}{}", colors::bright_yellow().regular, plugin.file_name().unwrap().to_str().unwrap());
+            }
         }
         
         if port != 25565 { 
