@@ -54,7 +54,7 @@ mcsdk
 ## Support
 
 It should be usable under Windows and MacOS but it only got tested under Linux.
-It would be appreciated that if you have any Issues to open a Issue. Thx u
+It would be appreciated that if you have any Issues to open a Issue. Thx u（＾ν＾）
 
 ## How to contribute
 
